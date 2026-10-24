@@ -31,3 +31,6 @@ echo "    ArgoCD UI:  kubectl port-forward -n argocd svc/argocd-server 8080:443"
 echo "    Open:       https://localhost:8080  "
 echo
 echo "    Check sync: kubectl get applications -n argocd"
+
+
+#testwebhook
