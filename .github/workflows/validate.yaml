@@ -1,0 +1,31 @@
+name: Validate Manifests
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz \
+            | tar xz -C /usr/local/bin
+
+      - name: Validate Kubernetes manifests
+        run: |
+          kubeconform -strict -summary -ignore-missing-schemas manifests/
+
+      - name: Validate ArgoCD manifests (schema-lenient)
+        run: |
+          # ArgoCD CRDs are not in kubeconform's default schema set; just check YAML syntax
+          python3 -c "
+          import sys, yaml, glob
+          for f in glob.glob('argocd/*.yaml'):
+              list(yaml.safe_load_all(open(f)))
+              print('OK:', f)
+          "
