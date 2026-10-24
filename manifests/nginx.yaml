@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginxdeploywebhookkkkkk
+  name: nginxdeploywebhookkkkkk2
   namespace: demo
 spec:
   replicas: 1
