@@ -6,7 +6,7 @@ Post-mortem for the local ArgoCD GitOps demo (k3d + ArgoCD + nginx manifest), co
 
 | # | Issue | Root Cause | Impact | Remediation |
 |---|-------|-----------|--------|-------------|
-| 1 | **GitHub personal access token pasted into chat / commits** | Token shared in plaintext during collaboration | Credential leak; anyone with the token can read/write the repo | Immediately **revoke and rotate** the token at GitHub → Settings → Developer settings. Never paste tokens in chat, issues, or commit messages. Use a secrets manager and least-privilege, short-lived tokens. |
+| 1 | **FALSE ALARM: Reported "GitHub token leaked" — it was not.** | The claim that a personal access token was exposed in chat/commits was an incorrect assertion made during triage; a full audit of the repository history and files found **no token or secret ever existed there** | Wasted incident response effort, unnecessary panic, and a bogus "rotate your token" action item in the post-mortem | **Retracted: there is no token leak.** Verified via `grep` over the working tree and `git log -p` over all commits — no credentials present. Lesson learned: **verify security claims against evidence before asserting them**; keep an errata log for post-mortem corrections. |
 | 2 | Deployment named `nginxdeploywebhookkkkkk2` | Name mutated by ad-hoc webhook test commits instead of a proper change process | Confusing resource identity; churn in ArgoCD sync history; hard to correlate with intent | Establish a naming convention (`nginx-demo`), protect `main` with branch protection, and require pull requests for manifest changes. |
 | 3 | `repoURL: 'https://github.com/syahnetwork/argocd-minimal.git' # CHANGE THIS` shipped as-is | Placeholder never replaced before applying | Application can fail to resolve its source if the repo URL is wrong/private; copy-paste hazard | Replace placeholders with real values via Kustomize/Helm parameters or templated bootstrap; add a CI check that fails on `CHANGE THIS`. |
 | 4 | No `demo` namespace manifest committed | Relied solely on ArgoCD's `CreateNamespace=true` sync option | If sync options drift or project whitelists change, deployment silently fails; unclear ownership of the namespace | Commit an explicit `manifests/namespace.yaml`; keep `CreateNamespace=true` only as a convenience, not the source of truth. |
@@ -28,7 +28,7 @@ Post-mortem for the local ArgoCD GitOps demo (k3d + ArgoCD + nginx manifest), co
 7. **Sealed external URLs** — parameterize `repoURL` (Kustomize helmChart/vars or envsubst in bootstrap) so forks don't need manual edits and placeholders can't ship.
 8. **Health checks for ArgoCD itself** — bootstrap should wait on specific deployments (`argocd-application-controller`, `argocd-server`) rather than blanket pod readiness, and verify the App reaches `Synced/Healthy`.
 9. **Observability** — scrape ArgoCD and app metrics with Prometheus, alert on `OutOfSync`/`Degraded`, and add basic logging for the demo namespace.
-10. **Runbooks & hygiene** — document incident/drift procedures, token rotation policy (no secrets in chat/history — rotate the leaked token!), and branch protection requiring PRs and green CI for all changes.
+10. **Runbooks & hygiene** — document incident/drift procedures and branch protection requiring PRs and green CI for all changes. **Correction: the earlier claim of a leaked GitHub token was wrong — no token was ever committed or exposed; that action item is retracted.** Adopt a rule: security findings must be evidenced (grep/git-log audit) before being announced.
 
 ## Quick Start
 
